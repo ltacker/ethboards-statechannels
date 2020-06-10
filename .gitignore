@@ -11,5 +11,18 @@
 # Output of the go coverage tool, specifically when used with LiteIDE
 *.out
 
-# Dependency directories (remove the comment below to include it)
-# vendor/
+# OS
+.DS_Store
+*.swp
+*.swo
+.vscode
+.idea
+
+# Build
+vendor
+.vendor-new
+build
+
+# IDE
+.idea/
+*.iml
