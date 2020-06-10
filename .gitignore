@@ -26,3 +26,6 @@ build
 # IDE
 .idea/
 *.iml
+
+# Go
+go.sum
