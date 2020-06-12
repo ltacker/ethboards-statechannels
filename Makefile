@@ -12,3 +12,6 @@ lint:
 	golangci-lint run -v
 	find . -name '*.go' -type f -not -path "./vendor*" -not -path "*.git*" | xargs gofmt -d -s
 	go mod verify
+
+abi:
+	abigen --abi abi/BoardHandler.abi --pkg statechannels --type BoardHandler --out pkg/boardHandler.go
