@@ -16,7 +16,7 @@ type StateChannel struct {
 	PlayerA   string
 	PlayerB   string
 	StateList [][121]uint8
-	MoveList  [][]uint8
+	MoveList  [][4]uint8
 	R         []string
 	S         []string
 	V         []uint8
@@ -37,6 +37,11 @@ func NewStateChannel(
 	sc.PlayerB = playerB
 
 	sc.StateList = append(sc.StateList, initialState)
+
+	sc.MoveList = [][4]uint8{}
+	sc.R = []string{}
+	sc.S = []string{}
+	sc.V = []uint8{}
 
 	return sc
 }
@@ -127,7 +132,7 @@ func (conn *StateChannelConnection) StateChannelCount() (int, error) {
 func (conn *StateChannelConnection) TurnCount(
 	boardId uint64,
 	gameId uint64,
-) (int, error) {
+) (uint64, error) {
 	// Verify if the game is inside mongodb
 	collection := conn.Client.Database("ethboards").Collection("statechannels")
 
@@ -140,7 +145,7 @@ func (conn *StateChannelConnection) TurnCount(
 	if err == nil {
 		// No error, the state channel has been retrieved
 		// The turn number is the number of element in move
-		return len(stateChannel.MoveList), nil
+		return uint64(len(stateChannel.MoveList)), nil
 	} else {
 		// If decode returns ErrNoDocuments then the game doesn't exist in mongodb
 
@@ -216,23 +221,55 @@ func (conn *StateChannelConnection) CurrentState(
 	return currentState, nil
 }
 
-// // Insert a new state
-// result, err := collection.UpdateOne(
-//     context.TODO(),
-//     bson.M{
-// 		"BoardId", id,
-// 		"GameId": id,
-// 	},
-//     bson.D{
-//         {
-// 			"$push", bson.D{{"StateList", state}},
-// 			"$push", bson.D{{"MoveList", move}},
-// 			"$push", bson.D{{"R", r}},
-// 			"$push", bson.D{{"S", s}},
-// 			"$push", bson.D{{"V", v}},
-// 		},
-//     },
-// )
-// if err != nil {
-//     log.Fatal(err)
-// }
+func (conn *StateChannelConnection) AppendMove(
+	boardId uint64,
+	gameId uint64,
+	move [4]uint8,
+) ([121]uint8, uint64, error) {
+	var newState [121]uint8
+
+	// Get the current state of the game
+	currentState, err := conn.CurrentState(boardId, gameId)
+	if err != nil {
+		return newState, 0, err
+	}
+
+	// Get the player index from the current turn
+	currentTurn, err := conn.TurnCount(boardId, gameId)
+	if err != nil {
+		return newState, 0, err
+	}
+	playerIndex := uint8(currentTurn % 2)
+
+	// Simulate the turn
+	newState, err = PerformMove(
+		conn.EthClient,
+		boardId,
+		gameId,
+		playerIndex,
+		move,
+		currentState,
+	)
+	if err != nil {
+		return newState, 0, err
+	}
+
+	// Add the new state to mongoDB
+	collection := conn.Client.Database("ethboards").Collection("statechannels")
+	_, err = collection.UpdateOne(
+		context.TODO(),
+		bson.M{
+			"boardid": boardId,
+			"gameid":  gameId,
+		},
+		bson.D{
+			{"$push", bson.M{"statelist": newState}},
+			{"$push", bson.M{"movelist": move}},
+		},
+	)
+	if err != nil {
+		return newState, 0, err
+	}
+
+	return newState, currentTurn + 1, nil
+}

@@ -2,10 +2,13 @@ package statechannels
 
 import (
 	"context"
+	"crypto/ecdsa"
+	"log"
 	"math/big"
 
 	"github.com/ethereum/go-ethereum/accounts/abi/bind"
 	"github.com/ethereum/go-ethereum/common"
+	"github.com/ethereum/go-ethereum/crypto"
 	"github.com/ethereum/go-ethereum/ethclient"
 )
 
@@ -107,4 +110,51 @@ func GameValues(
 	}
 
 	return playerA.String(), playerB.String(), initialState, nil
+}
+
+// Simulate a move aand get the new state
+func PerformMove(
+	ethClient *ethclient.Client,
+	boardId uint64,
+	gameId uint64,
+	player uint8,
+	move [4]uint8,
+	state [121]uint8,
+) ([121]uint8, error) {
+	var outputState [121]uint8
+
+	// Get the instance of ethboards
+	ethBoards, err := NewEthBoards(common.HexToAddress(ethboardsAddress), ethClient)
+	if err != nil {
+		return outputState, err
+	}
+
+	// Gernerate a key to get a 'from' value
+	privateKey, err := crypto.GenerateKey()
+	if err != nil {
+		return outputState, err
+	}
+	publicKey := privateKey.Public()
+	publicKeyECDSA, ok := publicKey.(*ecdsa.PublicKey)
+	if !ok {
+		log.Fatal("error casting public key to ECDSA")
+	}
+	fromAddress := crypto.PubkeyToAddress(*publicKeyECDSA)
+
+	// Simulate the turn
+	outputState, err = ethBoards.Simulate(
+		&bind.CallOpts{
+			From: fromAddress,
+		},
+		common.HexToAddress(boardHandlerAddress),
+		big.NewInt(int64(boardId)),
+		player,
+		move,
+		state,
+	)
+	if err != nil {
+		return outputState, err
+	}
+
+	return outputState, nil
 }
