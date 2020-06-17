@@ -110,9 +110,12 @@ func state(w http.ResponseWriter, req *http.Request) {
 // }
 
 type NewMovePayload struct {
-	BoardId int      `json:"boardid,string"`
-	GameId  int      `json:"gameid,string"`
-	Move    [4]uint8 `json:"move,string"`
+	BoardId int       `json:"boardid,string"`
+	GameId  int       `json:"gameid,string"`
+	Move    [4]uint8  `json:"move,string"`
+	R       [32]uint8 `json:"r,string"`
+	S       [32]uint8 `json:"s,string"`
+	V       uint8     `json:"v"`
 }
 
 type NewMoveResponse struct {
@@ -148,6 +151,25 @@ func newMove(w http.ResponseWriter, req *http.Request) {
 		return
 	}
 
+	verified, err := connection.VerifySignature(
+		uint64(payload.BoardId),
+		uint64(payload.GameId),
+		payload.Move,
+		payload.R,
+		payload.S,
+		payload.V,
+	)
+	if err != nil {
+		fmt.Println("Error verifying signature")
+		fmt.Println(err.Error())
+		http.Error(w, err.Error(), http.StatusInternalServerError)
+		return
+	}
+	if !verified {
+		fmt.Println("Signature is not correct")
+		http.Error(w, "Signature is not correct", http.StatusInternalServerError)
+	}
+
 	// Simulate and append the move to mongodb
 	newState, newTurn, err := connection.AppendMove(
 		uint64(payload.BoardId),
@@ -161,7 +183,7 @@ func newMove(w http.ResponseWriter, req *http.Request) {
 		return
 	}
 
-	// Encore response
+	// Encode response
 	response := NewMoveResponse{newState, int(newTurn)}
 	encodedResponse, err := json.Marshal(response)
 	if err != nil {

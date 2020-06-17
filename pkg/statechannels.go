@@ -129,10 +129,10 @@ func (conn *StateChannelConnection) StateChannelCount() (int, error) {
 	return int(result), nil
 }
 
-func (conn *StateChannelConnection) TurnCount(
+func (conn *StateChannelConnection) GetStateChannel(
 	boardId uint64,
 	gameId uint64,
-) (uint64, error) {
+) (*StateChannel, error) {
 	// Verify if the game is inside mongodb
 	collection := conn.Client.Database("ethboards").Collection("statechannels")
 
@@ -143,31 +143,42 @@ func (conn *StateChannelConnection) TurnCount(
 	err := result.Decode(&stateChannel)
 
 	if err == nil {
-		// No error, the state channel has been retrieved
-		// The turn number is the number of element in move
-		return uint64(len(stateChannel.MoveList)), nil
+		return &stateChannel, nil
 	} else {
 		// If decode returns ErrNoDocuments then the game doesn't exist in mongodb
 
 		// Verify the game exist in the smart contract
 		exist, err := GameExist(conn.EthClient, boardId, gameId)
 		if err != nil {
-			return 0, err
+			return nil, err
 		}
 
 		if exist {
 			// If the game exist we create a new document into mongo
-			_, err = conn.addNewStateChannel(boardId, gameId)
+			stateChannel, err := conn.addNewStateChannel(boardId, gameId)
 			if err != nil {
-				return 0, err
+				return nil, err
 			}
+			return &stateChannel, nil
 		} else {
 			// the game doesn't exist, send an error
-			return 0, errors.New("The game doesn't exist")
+			return nil, errors.New("The game doesn't exist")
 		}
 	}
+}
 
-	return 0, nil
+func (conn *StateChannelConnection) TurnCount(
+	boardId uint64,
+	gameId uint64,
+) (uint64, error) {
+
+	// Get teh state channel
+	stateChannel, err := conn.GetStateChannel(boardId, gameId)
+
+	if err != nil {
+		return 0, err
+	}
+	return uint64(len(stateChannel.MoveList)), nil
 }
 
 func (conn *StateChannelConnection) CurrentState(
@@ -176,48 +187,16 @@ func (conn *StateChannelConnection) CurrentState(
 ) ([121]uint8, error) {
 	var currentState [121]uint8
 
-	// Verify if the game is inside mongodb
-	collection := conn.Client.Database("ethboards").Collection("statechannels")
+	// Get the state channel
+	stateChannel, err := conn.GetStateChannel(boardId, gameId)
 
-	filter := bson.M{"boardid": boardId, "gameid": gameId}
-	result := collection.FindOne(context.TODO(), filter)
-
-	var stateChannel StateChannel
-	err := result.Decode(&stateChannel)
-
-	if err == nil {
-		// No error, the state channel has been retrieved
-		// We return the last move
-		statesNumber := len(stateChannel.StateList)
-		currentState = stateChannel.StateList[statesNumber-1]
-
-		return currentState, nil
-	} else {
-		// If decode returns ErrNoDocuments then the game doesn't exist in mongodb
-
-		// Verify the game exist in the smart contract
-		exist, err := GameExist(conn.EthClient, boardId, gameId)
-		if err != nil {
-			return currentState, err
-		}
-
-		if exist {
-			// If the game exist we create a new document into mongo
-			stateChannel, err := conn.addNewStateChannel(boardId, gameId)
-			if err != nil {
-				return currentState, err
-			}
-
-			// Get the initial state
-			statesNumber := len(stateChannel.StateList)
-			currentState = stateChannel.StateList[statesNumber-1]
-			return currentState, nil
-		} else {
-			// the game doesn't exist, send an error
-			return currentState, errors.New("The game doesn't exist")
-		}
+	if err != nil {
+		return currentState, err
 	}
 
+	// Get the last state
+	statesNumber := len(stateChannel.StateList)
+	currentState = stateChannel.StateList[statesNumber-1]
 	return currentState, nil
 }
 
@@ -228,17 +207,19 @@ func (conn *StateChannelConnection) AppendMove(
 ) ([121]uint8, uint64, error) {
 	var newState [121]uint8
 
-	// Get the current state of the game
-	currentState, err := conn.CurrentState(boardId, gameId)
+	// Get the state channel
+	stateChannel, err := conn.GetStateChannel(boardId, gameId)
 	if err != nil {
 		return newState, 0, err
 	}
 
+	// Get the current state
+	statesNumber := len(stateChannel.StateList)
+	currentState := stateChannel.StateList[statesNumber-1]
+
 	// Get the player index from the current turn
-	currentTurn, err := conn.TurnCount(boardId, gameId)
-	if err != nil {
-		return newState, 0, err
-	}
+	currentTurn := uint64(len(stateChannel.MoveList))
+
 	playerIndex := uint8(currentTurn % 2)
 
 	// Simulate the turn
@@ -272,4 +253,56 @@ func (conn *StateChannelConnection) AppendMove(
 	}
 
 	return newState, currentTurn + 1, nil
+}
+
+func (conn *StateChannelConnection) VerifySignature(
+	boardId uint64,
+	gameId uint64,
+	move [4]uint8,
+	r [32]uint8,
+	s [32]uint8,
+	v uint8,
+) (bool, error) {
+	// Get the state channel
+	stateChannel, err := conn.GetStateChannel(boardId, gameId)
+	if err != nil {
+		return false, err
+	}
+
+	// Get the current state
+	statesNumber := len(stateChannel.StateList)
+	currentState := stateChannel.StateList[statesNumber-1]
+
+	// Get the player index from the current turn
+	currentTurn := uint64(len(stateChannel.MoveList))
+
+	nonce := [3]uint64{boardId, gameId, currentTurn}
+
+	// Get the address of the signature
+	signingAddress, err := GetTurnSignatureAddress(
+		conn.EthClient,
+		nonce,
+		currentState,
+		move,
+		r,
+		s,
+		v,
+	)
+	if err != nil {
+		return false, err
+	}
+
+	// Get the address of the player that should sign the turn
+	var turnPlayer string
+
+	if currentTurn%2 == 0 {
+		turnPlayer = stateChannel.PlayerA
+	} else {
+		turnPlayer = stateChannel.PlayerB
+	}
+
+	// Compare addresses
+	sameAddress := signingAddress.String() == turnPlayer
+
+	return sameAddress, nil
 }

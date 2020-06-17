@@ -27,7 +27,7 @@ var (
 )
 
 // EthBoardsABI is the input ABI used to generate the binding from.
-const EthBoardsABI = "[{\"constant\":true,\"inputs\":[{\"internalType\":\"address\",\"name\":\"boardHandlerAddress\",\"type\":\"address\"},{\"internalType\":\"uint256\",\"name\":\"boardId\",\"type\":\"uint256\"},{\"internalType\":\"uint8\",\"name\":\"player\",\"type\":\"uint8\"},{\"internalType\":\"uint8[4]\",\"name\":\"move\",\"type\":\"uint8[4]\"},{\"internalType\":\"uint8[121]\",\"name\":\"state\",\"type\":\"uint8[121]\"}],\"name\":\"simulate\",\"outputs\":[{\"internalType\":\"uint8[121]\",\"name\":\"\",\"type\":\"uint8[121]\"}],\"payable\":false,\"stateMutability\":\"view\",\"type\":\"function\"},{\"constant\":false,\"inputs\":[{\"internalType\":\"address\",\"name\":\"boardHandlerAddress\",\"type\":\"address\"},{\"internalType\":\"uint256\",\"name\":\"boardId\",\"type\":\"uint256\"},{\"internalType\":\"uint256\",\"name\":\"gameId\",\"type\":\"uint256\"},{\"internalType\":\"uint256\",\"name\":\"initialTurnNumber\",\"type\":\"uint256\"},{\"internalType\":\"uint8[4][2]\",\"name\":\"move\",\"type\":\"uint8[4][2]\"},{\"internalType\":\"bytes32[2]\",\"name\":\"r\",\"type\":\"bytes32[2]\"},{\"internalType\":\"bytes32[2]\",\"name\":\"s\",\"type\":\"bytes32[2]\"},{\"internalType\":\"uint8[2]\",\"name\":\"v\",\"type\":\"uint8[2]\"},{\"internalType\":\"uint8[121]\",\"name\":\"inputState\",\"type\":\"uint8[121]\"}],\"name\":\"claimVictory\",\"outputs\":[],\"payable\":false,\"stateMutability\":\"nonpayable\",\"type\":\"function\"}]"
+const EthBoardsABI = "[{\"constant\":true,\"inputs\":[{\"internalType\":\"address\",\"name\":\"boardHandlerAddress\",\"type\":\"address\"},{\"internalType\":\"uint256\",\"name\":\"boardId\",\"type\":\"uint256\"},{\"internalType\":\"uint8\",\"name\":\"player\",\"type\":\"uint8\"},{\"internalType\":\"uint8[4]\",\"name\":\"move\",\"type\":\"uint8[4]\"},{\"internalType\":\"uint8[121]\",\"name\":\"state\",\"type\":\"uint8[121]\"}],\"name\":\"simulate\",\"outputs\":[{\"internalType\":\"uint8[121]\",\"name\":\"\",\"type\":\"uint8[121]\"}],\"payable\":false,\"stateMutability\":\"view\",\"type\":\"function\"},{\"constant\":true,\"inputs\":[{\"internalType\":\"uint8[121]\",\"name\":\"state\",\"type\":\"uint8[121]\"},{\"internalType\":\"uint256[3]\",\"name\":\"nonce\",\"type\":\"uint256[3]\"},{\"internalType\":\"uint8[4]\",\"name\":\"move\",\"type\":\"uint8[4]\"},{\"internalType\":\"bytes32\",\"name\":\"r\",\"type\":\"bytes32\"},{\"internalType\":\"bytes32\",\"name\":\"s\",\"type\":\"bytes32\"},{\"internalType\":\"uint8\",\"name\":\"v\",\"type\":\"uint8\"}],\"name\":\"getTurnSignatureAddress\",\"outputs\":[{\"internalType\":\"address\",\"name\":\"recovered\",\"type\":\"address\"}],\"payable\":false,\"stateMutability\":\"pure\",\"type\":\"function\"},{\"constant\":false,\"inputs\":[{\"internalType\":\"address\",\"name\":\"boardHandlerAddress\",\"type\":\"address\"},{\"internalType\":\"uint256\",\"name\":\"boardId\",\"type\":\"uint256\"},{\"internalType\":\"uint256\",\"name\":\"gameId\",\"type\":\"uint256\"},{\"internalType\":\"uint256\",\"name\":\"initialTurnNumber\",\"type\":\"uint256\"},{\"internalType\":\"uint8[4][2]\",\"name\":\"move\",\"type\":\"uint8[4][2]\"},{\"internalType\":\"bytes32[2]\",\"name\":\"r\",\"type\":\"bytes32[2]\"},{\"internalType\":\"bytes32[2]\",\"name\":\"s\",\"type\":\"bytes32[2]\"},{\"internalType\":\"uint8[2]\",\"name\":\"v\",\"type\":\"uint8[2]\"},{\"internalType\":\"uint8[121]\",\"name\":\"inputState\",\"type\":\"uint8[121]\"}],\"name\":\"claimVictory\",\"outputs\":[],\"payable\":false,\"stateMutability\":\"nonpayable\",\"type\":\"function\"}]"
 
 // EthBoards is an auto generated Go binding around an Ethereum contract.
 type EthBoards struct {
@@ -169,6 +169,32 @@ func (_EthBoards *EthBoardsTransactorRaw) Transfer(opts *bind.TransactOpts) (*ty
 // Transact invokes the (paid) contract method with params as input values.
 func (_EthBoards *EthBoardsTransactorRaw) Transact(opts *bind.TransactOpts, method string, params ...interface{}) (*types.Transaction, error) {
 	return _EthBoards.Contract.contract.Transact(opts, method, params...)
+}
+
+// GetTurnSignatureAddress is a free data retrieval call binding the contract method 0xead5e463.
+//
+// Solidity: function getTurnSignatureAddress(uint8[121] state, uint256[3] nonce, uint8[4] move, bytes32 r, bytes32 s, uint8 v) pure returns(address recovered)
+func (_EthBoards *EthBoardsCaller) GetTurnSignatureAddress(opts *bind.CallOpts, state [121]uint8, nonce [3]*big.Int, move [4]uint8, r [32]byte, s [32]byte, v uint8) (common.Address, error) {
+	var (
+		ret0 = new(common.Address)
+	)
+	out := ret0
+	err := _EthBoards.contract.Call(opts, out, "getTurnSignatureAddress", state, nonce, move, r, s, v)
+	return *ret0, err
+}
+
+// GetTurnSignatureAddress is a free data retrieval call binding the contract method 0xead5e463.
+//
+// Solidity: function getTurnSignatureAddress(uint8[121] state, uint256[3] nonce, uint8[4] move, bytes32 r, bytes32 s, uint8 v) pure returns(address recovered)
+func (_EthBoards *EthBoardsSession) GetTurnSignatureAddress(state [121]uint8, nonce [3]*big.Int, move [4]uint8, r [32]byte, s [32]byte, v uint8) (common.Address, error) {
+	return _EthBoards.Contract.GetTurnSignatureAddress(&_EthBoards.CallOpts, state, nonce, move, r, s, v)
+}
+
+// GetTurnSignatureAddress is a free data retrieval call binding the contract method 0xead5e463.
+//
+// Solidity: function getTurnSignatureAddress(uint8[121] state, uint256[3] nonce, uint8[4] move, bytes32 r, bytes32 s, uint8 v) pure returns(address recovered)
+func (_EthBoards *EthBoardsCallerSession) GetTurnSignatureAddress(state [121]uint8, nonce [3]*big.Int, move [4]uint8, r [32]byte, s [32]byte, v uint8) (common.Address, error) {
+	return _EthBoards.Contract.GetTurnSignatureAddress(&_EthBoards.CallOpts, state, nonce, move, r, s, v)
 }
 
 // Simulate is a free data retrieval call binding the contract method 0xe3e490d4.

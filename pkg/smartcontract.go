@@ -158,3 +158,40 @@ func PerformMove(
 
 	return outputState, nil
 }
+
+func GetTurnSignatureAddress(
+	ethClient *ethclient.Client,
+	nonce [3]uint64,
+	state [121]uint8,
+	move [4]uint8,
+	r [32]uint8,
+	s [32]uint8,
+	v uint8,
+) (*common.Address, error) {
+	// Get the instance of ethboards
+	ethBoards, err := NewEthBoards(common.HexToAddress(ethboardsAddress), ethClient)
+	if err != nil {
+		return nil, err
+	}
+
+	nonceBigInt := [3]*big.Int{
+		big.NewInt(int64(nonce[0])),
+		big.NewInt(int64(nonce[1])),
+		big.NewInt(int64(nonce[2])),
+	}
+
+	address, err := ethBoards.GetTurnSignatureAddress(
+		&bind.CallOpts{},
+		state,
+		nonceBigInt,
+		move,
+		r,
+		s,
+		v,
+	)
+	if err != nil {
+		return nil, err
+	}
+
+	return &address, nil
+}
