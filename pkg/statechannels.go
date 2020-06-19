@@ -17,9 +17,9 @@ type StateChannel struct {
 	PlayerB   string
 	StateList [][121]uint8
 	MoveList  [][4]uint8
-	R         []string
-	S         []string
-	V         []uint8
+	R         [][32]uint8
+	S         [][32]uint8
+	V         []uint
 }
 
 func NewStateChannel(
@@ -39,9 +39,9 @@ func NewStateChannel(
 	sc.StateList = append(sc.StateList, initialState)
 
 	sc.MoveList = [][4]uint8{}
-	sc.R = []string{}
-	sc.S = []string{}
-	sc.V = []uint8{}
+	sc.R = [][32]uint8{}
+	sc.S = [][32]uint8{}
+	sc.V = []uint{}
 
 	return sc
 }
@@ -204,6 +204,9 @@ func (conn *StateChannelConnection) AppendMove(
 	boardId uint64,
 	gameId uint64,
 	move [4]uint8,
+	r [32]uint8,
+	s [32]uint8,
+	v uint8,
 ) ([121]uint8, uint64, error) {
 	var newState [121]uint8
 
@@ -246,6 +249,9 @@ func (conn *StateChannelConnection) AppendMove(
 		bson.D{
 			{"$push", bson.M{"statelist": newState}},
 			{"$push", bson.M{"movelist": move}},
+			{"$push", bson.M{"r": r}},
+			{"$push", bson.M{"s": s}},
+			{"$push", bson.M{"v": uint(v)}},
 		},
 	)
 	if err != nil {
@@ -305,4 +311,47 @@ func (conn *StateChannelConnection) VerifySignature(
 	sameAddress := signingAddress.String() == turnPlayer
 
 	return sameAddress, nil
+}
+
+type StateSignature struct {
+	InitialTurn uint64       `json:"turn,string"`
+	InputState  [121]uint8   `json:"state,string"`
+	Move        [2][4]uint8  `json:"move,string"`
+	R           [2][32]uint8 `json:"r,string"`
+	S           [2][32]uint8 `json:"s,string"`
+	V           [2]uint8     `json:"v,string"`
+}
+
+// TODO: Verify integrity of data (if turn is 4 there are 4 signatures, etc...)
+func (conn *StateChannelConnection) LatestStateSignature(
+	boardId uint64,
+	gameId uint64,
+) (*StateSignature, error) {
+	// Get the state channel
+	stateChannel, err := conn.GetStateChannel(boardId, gameId)
+	if err != nil {
+		return nil, err
+	}
+
+	// If there is less than 2 played moves, return an error
+	turnNumber := len(stateChannel.MoveList)
+	if turnNumber < 2 {
+		return nil, errors.New("Need at least two turns to get a valid signed state")
+	}
+
+	// Fill the state signature
+	var stateSignature StateSignature
+
+	stateSignature.InitialTurn = uint64(turnNumber) - 2
+	stateSignature.InputState = stateChannel.StateList[turnNumber-2]
+	stateSignature.Move[0] = stateChannel.MoveList[turnNumber-2]
+	stateSignature.Move[1] = stateChannel.MoveList[turnNumber-1]
+	stateSignature.R[0] = stateChannel.R[turnNumber-2]
+	stateSignature.R[1] = stateChannel.R[turnNumber-1]
+	stateSignature.S[0] = stateChannel.S[turnNumber-2]
+	stateSignature.S[1] = stateChannel.S[turnNumber-1]
+	stateSignature.V[0] = uint8(stateChannel.V[turnNumber-2])
+	stateSignature.V[1] = uint8(stateChannel.V[turnNumber-1])
+
+	return &stateSignature, nil
 }

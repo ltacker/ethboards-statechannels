@@ -83,6 +83,7 @@ func state(w http.ResponseWriter, req *http.Request) {
 		return
 	}
 
+	// Get the current state
 	currentState, err := connection.CurrentState(boardId, gameId)
 	if err != nil {
 		fmt.Println("CurrentState error")
@@ -91,6 +92,7 @@ func state(w http.ResponseWriter, req *http.Request) {
 		return
 	}
 
+	// Encode response
 	encodedState, err := json.Marshal(currentState)
 	if err != nil {
 		fmt.Println("json.Marshal error")
@@ -102,12 +104,60 @@ func state(w http.ResponseWriter, req *http.Request) {
 	w.Write(encodedState)
 }
 
-// // Get the signature of the last state
-// // The signature are the two preceding signed move that proves the legitimacy of the state
-// // BoardId
-// // GameId
-// func statesignature(w http.ResponseWriter, req *http.Request) {
-// }
+// Get the latest state signature
+// The latest state signature is the combination the two preceding signed move,
+// that proves the legitimacy of the state
+// The turn count must be at least 2
+// BoardId
+// GameId
+func statesignature(w http.ResponseWriter, req *http.Request) {
+	// Configure header
+	enableCors(&w)
+	w.Header().Set("Content-Type", "application/json")
+
+	// Must be GET
+	if req.Method != "GET" {
+		http.Error(w, "404 not found.", http.StatusNotFound)
+		return
+	}
+
+	// Parse the board id
+	boardId, err := strconv.ParseUint(req.FormValue("boardId"), 10, 64)
+	if err != nil {
+		http.Error(w, err.Error(), http.StatusBadRequest)
+		return
+	}
+
+	// Parse the game id
+	gameId, err := strconv.ParseUint(req.FormValue("gameId"), 10, 64)
+	if err != nil {
+		http.Error(w, err.Error(), http.StatusBadRequest)
+		return
+	}
+
+	// Get the latest state signature from mongoDB database
+	latestStateSignature, err := connection.LatestStateSignature(
+		boardId,
+		gameId,
+	)
+	if err != nil {
+		fmt.Println("Get latest state signature error")
+		fmt.Println(err.Error())
+		http.Error(w, err.Error(), http.StatusInternalServerError)
+		return
+	}
+
+	// Encode response
+	encodedResponse, err := json.Marshal(*latestStateSignature)
+	if err != nil {
+		fmt.Println("json.Marshal error")
+		fmt.Println(err.Error())
+		http.Error(w, err.Error(), http.StatusInternalServerError)
+		return
+	}
+
+	w.Write(encodedResponse)
+}
 
 type NewMovePayload struct {
 	BoardId int       `json:"boardid,string"`
@@ -175,6 +225,9 @@ func newMove(w http.ResponseWriter, req *http.Request) {
 		uint64(payload.BoardId),
 		uint64(payload.GameId),
 		payload.Move,
+		payload.R,
+		payload.S,
+		payload.V,
 	)
 	if err != nil {
 		fmt.Println("AppendMove error")
@@ -230,7 +283,7 @@ func main() {
 
 	http.HandleFunc("/turn", turn)
 	http.HandleFunc("/state", state)
-	// http.HandleFunc("/statesignature", statesignature)
+	http.HandleFunc("/statesignature", statesignature)
 	http.HandleFunc("/newmove", newMove)
 	http.HandleFunc("/countgame", countGame)
 
