@@ -4,6 +4,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"net/http"
+	"os"
 	"strconv"
 
 	statechannels "github.com/ltacker/ethboards-statechannels/pkg"
@@ -273,7 +274,12 @@ func countGame(w http.ResponseWriter, req *http.Request) {
 
 func main() {
 	var err error
-	connection, err = statechannels.NewMongoConnection("mongodb", "27017", "ganache", "8545")
+	connection, err = statechannels.NewMongoConnection(
+		os.Getenv("MONGO_HOST"),
+		os.Getenv("MONGO_PORT"),
+		os.Getenv("WEB3_HOST"),
+		os.Getenv("WEB3_PORT"),
+	)
 
 	if err != nil {
 		fmt.Println("Can't connect to MongoDB")

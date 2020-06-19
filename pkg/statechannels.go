@@ -3,6 +3,7 @@ package statechannels
 import (
 	"context"
 	"errors"
+	"os"
 
 	"github.com/ethereum/go-ethereum/ethclient"
 	"go.mongodb.org/mongo-driver/bson"
@@ -58,7 +59,7 @@ func NewMongoConnection(
 	ethPort string,
 ) (*StateChannelConnection, error) {
 	// Connect to mongo
-	uri := "mongodb://admin:admin@" + mongoHost + ":" + mongoPort
+	uri := "mongodb://" + os.Getenv("MONGO_USERNAME") + ":" + os.Getenv("MONGMONGO_PASSWORDO_HOST") + "@" + mongoHost + ":" + mongoPort
 	client, err := mongo.Connect(context.TODO(), options.Client().ApplyURI(uri))
 	if err != nil {
 		return nil, err
