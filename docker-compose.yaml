@@ -29,6 +29,13 @@ services:
     ports:
       - 27017:27017
   ethboards-sc:
+    environment:
+      - WEB3_HOST=ganache
+      - WEB3_PORT=8545
+      - MONGO_HOST=mongo
+      - MONGO_PORT=27017
+      - MONGO_USERNAME=admin
+      - MONGO_PASSWORD=admin
     image: ethboards-statechannels:latest
     ports:
       - 8546:8546
