@@ -59,7 +59,7 @@ func NewMongoConnection(
 	ethPort string,
 ) (*StateChannelConnection, error) {
 	// Connect to mongo
-	uri := "mongodb://" + os.Getenv("MONGO_USERNAME") + ":" + os.Getenv("MONGMONGO_PASSWORDO_HOST") + "@" + mongoHost + ":" + mongoPort
+	uri := "mongodb://" + os.Getenv("MONGO_USERNAME") + ":" + os.Getenv("MONGO_PASSWORD") + "@" + mongoHost + ":" + mongoPort
 	client, err := mongo.Connect(context.TODO(), options.Client().ApplyURI(uri))
 	if err != nil {
 		return nil, err

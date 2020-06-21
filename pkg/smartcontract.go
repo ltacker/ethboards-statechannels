@@ -39,7 +39,7 @@ func GameExist(
 	gameId uint64,
 ) (bool, error) {
 	// Get the instance of board handler
-	boardHandler, err := NewBoardHandler(common.HexToAddress(boardHandlerAddress), ethClient)
+	boardHandler, err := NewBoardHandler(common.HexToAddress(boardHandlerAddress()), ethClient)
 	if err != nil {
 		return false, err
 	}
@@ -74,7 +74,7 @@ func GameValues(
 	var initialState [121]uint8
 
 	// Get the instance of board handler
-	boardHandler, err := NewBoardHandler(common.HexToAddress(boardHandlerAddress), ethClient)
+	boardHandler, err := NewBoardHandler(common.HexToAddress(boardHandlerAddress()), ethClient)
 	if err != nil {
 		return "", "", initialState, err
 	}
@@ -124,7 +124,7 @@ func PerformMove(
 	var outputState [121]uint8
 
 	// Get the instance of ethboards
-	ethBoards, err := NewEthBoards(common.HexToAddress(ethboardsAddress), ethClient)
+	ethBoards, err := NewEthBoards(common.HexToAddress(ethboardsAddress()), ethClient)
 	if err != nil {
 		return outputState, err
 	}
@@ -146,7 +146,7 @@ func PerformMove(
 		&bind.CallOpts{
 			From: fromAddress,
 		},
-		common.HexToAddress(boardHandlerAddress),
+		common.HexToAddress(boardHandlerAddress()),
 		big.NewInt(int64(boardId)),
 		player,
 		move,
@@ -169,7 +169,7 @@ func GetTurnSignatureAddress(
 	v uint8,
 ) (*common.Address, error) {
 	// Get the instance of ethboards
-	ethBoards, err := NewEthBoards(common.HexToAddress(ethboardsAddress), ethClient)
+	ethBoards, err := NewEthBoards(common.HexToAddress(ethboardsAddress()), ethClient)
 	if err != nil {
 		return nil, err
 	}
