@@ -55,8 +55,7 @@ type StateChannelConnection struct {
 func NewMongoConnection(
 	mongoHost string,
 	mongoPort string,
-	ethHost string,
-	ethPort string,
+	ethUrl string,
 ) (*StateChannelConnection, error) {
 	// Connect to mongo
 	uri := "mongodb://" + os.Getenv("MONGO_USERNAME") + ":" + os.Getenv("MONGO_PASSWORD") + "@" + mongoHost + ":" + mongoPort
@@ -66,7 +65,7 @@ func NewMongoConnection(
 	}
 
 	// Connect to Ethereum
-	ethClient, err := NewEthClient(ethHost, ethPort)
+	ethClient, err := NewEthClient(ethUrl)
 	if err != nil {
 		return nil, err
 	}

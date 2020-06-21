@@ -12,9 +12,8 @@ import (
 	"github.com/ethereum/go-ethereum/ethclient"
 )
 
-func NewEthClient(host string, port string) (*ethclient.Client, error) {
-	uri := "http://" + host + ":" + port
-	client, err := ethclient.Dial(uri)
+func NewEthClient(url string) (*ethclient.Client, error) {
+	client, err := ethclient.Dial(url)
 	if err != nil {
 		return nil, err
 	}

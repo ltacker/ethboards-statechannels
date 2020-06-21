@@ -277,8 +277,7 @@ func main() {
 	connection, err = statechannels.NewMongoConnection(
 		os.Getenv("MONGO_HOST"),
 		os.Getenv("MONGO_PORT"),
-		os.Getenv("WEB3_HOST"),
-		os.Getenv("WEB3_PORT"),
+		os.Getenv("WEB3_URL"),
 	)
 
 	if err != nil {
