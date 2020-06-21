@@ -1,0 +1,60 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: ebsc-deployment
+  labels:
+    app: ebsc
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: ebsc
+  template:
+    metadata:
+      labels:
+        app: ebsc
+    spec:
+      containers:
+        - image: ltacker/ethboards-statechannels
+          imagePullPolicy: Always
+          name: ebsc
+          ports:
+            - containerPort: 8546
+          env:
+            - name: WEB3_HOST
+              valueFrom:
+                configMapKeyRef:
+                  name: ebsc-config
+                  key: WEB3_HOST
+            - name: WEB3_PORT
+              valueFrom:
+                configMapKeyRef:
+                  name: ebsc-config
+                  key: WEB3_PORT
+            - name: MONGO_HOST
+              valueFrom:
+                configMapKeyRef:
+                  name: ebsc-config
+                  key: MONGO_HOST
+            - name: MONGO_PORT
+              valueFrom:
+                configMapKeyRef:
+                  name: ebsc-config
+                  key: MONGO_PORT
+            - name: MONGO_USERNAME
+              valueFrom:
+                configMapKeyRef:
+                  name: ebsc-config
+                  key: MONGO_USERNAME
+            - name: MONGO_PASSWORD
+              valueFrom:
+                configMapKeyRef:
+                  name: ebsc-config
+                  key: MONGO_PASSWORD
+          resources:
+            requests:
+              cpu: 100m
+              memory: 128Mi
+            limits:
+              cpu: 200m
+              memory: 256Mi

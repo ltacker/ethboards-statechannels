@@ -1,0 +1,23 @@
+apiVersion: v1
+kind: Service
+metadata:
+  labels:
+    app: ebsc
+  name: ebsc-service
+  namespace: default
+spec:
+  clusterIP: 10.40.7.63
+  externalTrafficPolicy: Cluster
+  ports:
+  - nodePort: 31716
+    port: 80
+    protocol: TCP
+    targetPort: 8546
+  selector:
+    app: ebsc
+  sessionAffinity: None
+  type: LoadBalancer
+status:
+  loadBalancer:
+    ingress:
+    - ip: 34.101.206.95
