@@ -6,6 +6,7 @@ import (
 	"net/http"
 	"os"
 	"strconv"
+	"time"
 
 	statechannels "github.com/ltacker/ethboards-statechannels/pkg"
 )
@@ -274,6 +275,10 @@ func countGame(w http.ResponseWriter, req *http.Request) {
 
 func main() {
 	var err error
+
+	// Necessary if mongo is started at the same time
+	time.Sleep(time.Second * 5)
+
 	connection, err = statechannels.NewMongoConnection(
 		os.Getenv("MONGO_HOST"),
 		os.Getenv("MONGO_PORT"),
@@ -291,6 +296,10 @@ func main() {
 	http.HandleFunc("/statesignature", statesignature)
 	http.HandleFunc("/newmove", newMove)
 	http.HandleFunc("/countgame", countGame)
+	http.HandleFunc("/", func(w http.ResponseWriter, req *http.Request) {
+		w.WriteHeader(http.StatusOK)
+		return
+	})
 
 	port := "8546"
 
