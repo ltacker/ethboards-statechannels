@@ -21,16 +21,16 @@ spec:
           ports:
             - containerPort: 8546
           env:
-            - name: WEB3_HOST
+            - name: WEB3_URL
               valueFrom:
                 configMapKeyRef:
                   name: ebsc-config
-                  key: WEB3_HOST
-            - name: WEB3_PORT
+                  key: WEB3_URL
+            - name: WEB3_NETWORK
               valueFrom:
                 configMapKeyRef:
                   name: ebsc-config
-                  key: WEB3_PORT
+                  key: WEB3_NETWORK
             - name: MONGO_HOST
               valueFrom:
                 configMapKeyRef:
