@@ -32,10 +32,7 @@ services:
     environment:
       - WEB3_URL=http://ganache:8545
       - WEB3_NETWORK=local
-      - MONGO_HOST=mongodb
-      - MONGO_PORT=27017
-      - MONGO_USERNAME=admin
-      - MONGO_PASSWORD=admin
+      - MONGO_URL=mongodb://admin:admin@mongodb:27017
     image: ethboards-statechannels:latest
     ports:
       - 8546:8546

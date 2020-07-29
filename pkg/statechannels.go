@@ -54,15 +54,13 @@ type StateChannelConnection struct {
 }
 
 func NewMongoConnection(
-	mongoHost string,
-	mongoPort string,
 	ethUrl string,
 ) (*StateChannelConnection, error) {
 	// Connect to mongo
-	uri := "mongodb://" + os.Getenv("MONGO_USERNAME") + ":" + os.Getenv("MONGO_PASSWORD") + "@" + mongoHost + ":" + mongoPort
+	url := os.Getenv("MONGO_URL")
 
-	fmt.Println(uri)
-	client, err := mongo.Connect(context.TODO(), options.Client().ApplyURI(uri))
+	fmt.Println(url)
+	client, err := mongo.Connect(context.TODO(), options.Client().ApplyURI(url))
 	if err != nil {
 		return nil, err
 	}
@@ -317,12 +315,12 @@ func (conn *StateChannelConnection) VerifySignature(
 }
 
 type StateSignature struct {
-	InitialTurn uint64       `json:"turn,string"`
-	InputState  [121]uint8   `json:"state,string"`
-	Move        [2][4]uint8  `json:"move,string"`
-	R           [2][32]uint8 `json:"r,string"`
-	S           [2][32]uint8 `json:"s,string"`
-	V           [2]uint8     `json:"v,string"`
+	Turn       uint64       `json:"turn,string"`
+	InputState [121]uint8   `json:"state,string"`
+	Move       [2][4]uint8  `json:"move,string"`
+	R          [2][32]uint8 `json:"r,string"`
+	S          [2][32]uint8 `json:"s,string"`
+	V          [2]uint8     `json:"v,string"`
 }
 
 // TODO: Verify integrity of data (if turn is 4 there are 4 signatures, etc...)
@@ -336,25 +334,48 @@ func (conn *StateChannelConnection) LatestStateSignature(
 		return nil, err
 	}
 
-	// If there is less than 2 played moves, return an error
 	turnNumber := len(stateChannel.MoveList)
-	if turnNumber < 2 {
-		return nil, errors.New("Need at least two turns to get a valid signed state")
-	}
 
 	// Fill the state signature
 	var stateSignature StateSignature
+	stateSignature.Turn = uint64(turnNumber)
 
-	stateSignature.InitialTurn = uint64(turnNumber) - 2
-	stateSignature.InputState = stateChannel.StateList[turnNumber-2]
-	stateSignature.Move[0] = stateChannel.MoveList[turnNumber-2]
-	stateSignature.Move[1] = stateChannel.MoveList[turnNumber-1]
-	stateSignature.R[0] = stateChannel.R[turnNumber-2]
-	stateSignature.R[1] = stateChannel.R[turnNumber-1]
-	stateSignature.S[0] = stateChannel.S[turnNumber-2]
-	stateSignature.S[1] = stateChannel.S[turnNumber-1]
-	stateSignature.V[0] = uint8(stateChannel.V[turnNumber-2])
-	stateSignature.V[1] = uint8(stateChannel.V[turnNumber-1])
+	// We normally povide the two preceding turns except if there are less than 2 turns played
+	if turnNumber == 0 {
+		// No turn played, no signature
+		// Fill empty signature fields with junk data
+		stateSignature.InputState = stateChannel.StateList[0]
+		stateSignature.Move[0] = [4]uint8{0, 0, 0, 0}
+		stateSignature.Move[1] = [4]uint8{0, 0, 0, 0}
+		stateSignature.R[0] = [32]uint8{0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0}
+		stateSignature.R[1] = [32]uint8{0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0}
+		stateSignature.S[0] = [32]uint8{0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0}
+		stateSignature.S[1] = [32]uint8{0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0}
+		stateSignature.V[0] = 0
+		stateSignature.V[1] = 0
+	} else if turnNumber == 1 {
+		// One turn played, only one signature
+		// Fill empty signature fields with junk data
+		stateSignature.InputState = stateChannel.StateList[0]
+		stateSignature.Move[0] = stateChannel.MoveList[0]
+		stateSignature.Move[1] = [4]uint8{0, 0, 0, 0}
+		stateSignature.R[0] = stateChannel.R[0]
+		stateSignature.R[1] = [32]uint8{0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0}
+		stateSignature.S[0] = stateChannel.S[0]
+		stateSignature.S[1] = [32]uint8{0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0}
+		stateSignature.V[0] = uint8(stateChannel.V[0])
+		stateSignature.V[1] = 0
+	} else {
+		stateSignature.InputState = stateChannel.StateList[turnNumber-2]
+		stateSignature.Move[0] = stateChannel.MoveList[turnNumber-2]
+		stateSignature.Move[1] = stateChannel.MoveList[turnNumber-1]
+		stateSignature.R[0] = stateChannel.R[turnNumber-2]
+		stateSignature.R[1] = stateChannel.R[turnNumber-1]
+		stateSignature.S[0] = stateChannel.S[turnNumber-2]
+		stateSignature.S[1] = stateChannel.S[turnNumber-1]
+		stateSignature.V[0] = uint8(stateChannel.V[turnNumber-2])
+		stateSignature.V[1] = uint8(stateChannel.V[turnNumber-1])
+	}
 
 	return &stateSignature, nil
 }

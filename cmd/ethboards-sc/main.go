@@ -280,8 +280,6 @@ func main() {
 	time.Sleep(time.Second * 5)
 
 	connection, err = statechannels.NewMongoConnection(
-		os.Getenv("MONGO_HOST"),
-		os.Getenv("MONGO_PORT"),
 		os.Getenv("WEB3_URL"),
 	)
 
