@@ -109,7 +109,6 @@ func state(w http.ResponseWriter, req *http.Request) {
 // Get the latest state signature
 // The latest state signature is the combination the two preceding signed move,
 // that proves the legitimacy of the state
-// The turn count must be at least 2
 // BoardId
 // GameId
 func statesignature(w http.ResponseWriter, req *http.Request) {
